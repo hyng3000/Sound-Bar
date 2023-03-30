@@ -11,7 +11,9 @@ import SwiftUI
 struct WaveFormApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                HomeView()
+            }
         }
     }
 }

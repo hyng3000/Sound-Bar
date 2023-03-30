@@ -50,7 +50,6 @@ class AudioAnalyzer: ObservableObject {
         do {
             audioRecorder = try AVAudioRecorder(url: url, settings: recorderSettings)
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [])
-            
             startMonitoring()
         } catch {
             fatalError(error.localizedDescription)
@@ -62,7 +61,6 @@ class AudioAnalyzer: ObservableObject {
         audioRecorder.isMeteringEnabled = true
         audioRecorder.record()
         timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { (timer) in
-    
             self.audioRecorder.updateMeters()
             self.soundSamples[self.currentSample] = self.audioRecorder.averagePower(forChannel: 0)
             self.currentSample = (self.currentSample + 1) % self.numberOfSamples
