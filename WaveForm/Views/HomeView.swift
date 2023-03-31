@@ -4,8 +4,6 @@ import SwiftUI
 struct HomeView: View {
 
     @StateObject var vm = HomeViewModel()
-    @StateObject var studio: SoundStudio = SoundStudio()
-    
     @State var showFiles: Bool = false
     
     
@@ -14,15 +12,23 @@ struct HomeView: View {
         VStack(alignment: .center) {
             Spacer()
             
-            SoundBarsDisplay(samples: studio.samples, vm: vm)
+            SoundBarsDisplay(samples: vm.sample, vm: vm)
             
             Spacer()
             
-            if !studio.samples.isEmpty {
-                if let date = studio.records.first?.stamp {
-                Text("\(date.formatted())")
-                }
-            }
+                
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .foregroundColor(Color.white)
+                    .shadow(radius: 15.0)
+                    Text(vm.selectedRecord != nil ? "\(vm.selectedRecord?.stamp.formatted() ?? "")" : "  Record something...")
+                        .padding(.horizontal)
+                        .frame(alignment: .trailing)
+                    }
+                .padding()
+            
             
             HStack(alignment: .center){
                 Spacer()
@@ -38,7 +44,7 @@ struct HomeView: View {
         .navigationTitle("Listen")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(content: { fileButton })
-        .sheet(isPresented: $showFiles, content: {FilesView(studio: studio)})
+        .sheet(isPresented: $showFiles, content: {FilesView(viewModel: vm)})
     }
 }
 
@@ -47,9 +53,17 @@ struct HomeView: View {
 extension HomeView {
 
     var stop: some View {
-        Button(action: {studio.stopRecording()}, label: {
+        Button(action: {
+            if vm.isRecording {
+                vm.stopRecording()
+                }
+            else if vm.isPlaying {
+                vm.stopPlayBack()
+            }
+        }, label: {
                     Image(systemName: "stop" )
                         .font(.system(size: 50))
+                        .foregroundColor(Color.purple)
                 })
                 .padding()
     }
@@ -57,23 +71,24 @@ extension HomeView {
     var record: some View {
         Button(
         action: {
-            if studio.isRecording {
-                studio.stopRecording()
+            if vm.isRecording {
+                vm.stopRecording()
             } else {
-                studio.record()
+                vm.record()
             }
         },
         label: {
-            Image(systemName: "record.circle").foregroundColor(studio.isRecording ? Color.red : Color.secondary)
+            Image(systemName: "record.circle").foregroundColor(vm.isRecording ? Color.red : Color.secondary)
                 .font(.system(size: 50))
             })
             .padding()
     }
     
     var play: some View {
-        Button(action: {studio.playLast()}, label: {
+        Button(action: {vm.play()}, label: {
                     Image(systemName: "play" )
                         .font(.system(size: 50))
+                        .foregroundColor(vm.isPlaying ? Color.green : Color.secondary)
                 })
                 .padding()
     }

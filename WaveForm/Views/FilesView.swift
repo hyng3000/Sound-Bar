@@ -10,17 +10,33 @@ import SwiftUI
 struct FilesView: View {
 
     @Environment(\.dismiss) var dismiss
-    @StateObject var studio: SoundStudio
+    @StateObject var viewModel: HomeViewModel
 
 
     var body: some View {
         VStack(alignment: .center){
             List{
-                ForEach(studio.records) { record in
-                    Text(record.stamp.formatted())
-                    .onTapGesture {
-                            studio.lastRecordedUrl = record.url
-                            dismiss()
+                ForEach(viewModel.records) { record in
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .foregroundColor(Color.white)
+                                .shadow(radius: 15.0)
+                            HStack {
+                            Text(record.stamp.formatted())
+                                    .onTapGesture {
+                                        viewModel.selectRecord(record)
+                                        dismiss()
+                                    }
+                            .padding(.horizontal)
+                            Spacer()
+                            exitButton
+                                    .onTapGesture {
+                                        viewModel.deleteRecording(record)
+                                    }
+                            .padding(.horizontal)
+                        }
                     }
                 }
             }
@@ -30,7 +46,7 @@ struct FilesView: View {
             Spacer()
             exitButton
         }.task {
-            await studio.getPreviousRecords()
+            await viewModel.getPreviousRecords()
         }
     }
     
@@ -51,6 +67,6 @@ extension FilesView {
 
 struct Files_Previews: PreviewProvider {
     static var previews: some View {
-        FilesView(studio: SoundStudio())
+        FilesView(viewModel: HomeViewModel())
     }
 }

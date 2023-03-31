@@ -74,4 +74,22 @@ class AppFileManager {
         }
     }
     
+    func deleteRecord(at url: URL) {
+        do {
+            try FileManager.default.removeItem(at : url)
+        } catch let e {
+            print(e)
+        }
+    }
+    
+    func getAllFilesFromDir(name: String) -> [URL]? {
+    
+        guard let directory = AppFileManager.instance.getUrlForDirectory(directoryName: name) else { return nil }
+        
+        guard let allFiles = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return nil }
+        
+        return allFiles
+        
+    }
+    
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Recording: Identifiable {
+struct Recording: Identifiable, Equatable {
     let id: String = UUID().uuidString
     let name: String
     let stamp: Date

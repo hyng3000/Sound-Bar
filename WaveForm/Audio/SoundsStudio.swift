@@ -17,27 +17,14 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
     var currentSample: Int = 0
     var timer: Timer? = nil
 
-    @Published var lastRecordedUrl: URL? = nil
-    @Published var isRecording: Bool = false
-    @Published var isPlaying: Bool = false
-    @Published var records: [Recording] = [] {
-        willSet {
-            objectWillChange.send()
-        }
-    }
-    
     @Published var samples: [Float]
     
     
+    let RECORDS_DIR: String = "Records"
     
-    let RecordsDir: String = "Records"
-    
-        override init() {
-            self.samples = [Float](repeating: .zero, count: numberOfSamples)
-            super.init()
-        }
-    
-    func record() {
+    override init() {
+        self.samples = [Float](repeating: .zero, count: numberOfSamples)
+        super.init()
         let session = AVAudioSession.sharedInstance()
         checkRecordingPermissions(session: session)
         
@@ -48,8 +35,11 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
         } catch  {
             print("recording config error")
         }
+    }
+    
+    func record() -> URL? {
         
-        guard let fileName = AppFileManager.instance.getPathFor_m4a(recordName: "Recording-\(Date())", directoryName: RecordsDir) else { return }
+        guard let fileName = AppFileManager.instance.getPathFor_m4a(recordName: "Recording-\(Date())", directoryName: RECORDS_DIR) else { return nil }
         
         let setting = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -63,56 +53,22 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audioRecorder.isMeteringEnabled = true
             audioRecorder.prepareToRecord()
             audioRecorder.record()
-            isRecording = true
             startMonitoring()
-            lastRecordedUrl = fileName
-            print(lastRecordedUrl!)
             print("Recording")
         } catch {
             print("recording init error")
         }
-        
+        return fileName
     }
     
     func stopRecording() {
         audioRecorder?.stop()
-        isRecording = false
-        Task {await getPreviousRecords()}
         print("Stopped Recording")
     }
     
-    func getPreviousRecords() async {
     
-        guard let recordsDirectory = AppFileManager.instance.getUrlForDirectory(directoryName: RecordsDir) else { return }
-        guard let allRecordingFiles = try? FileManager.default.contentsOfDirectory(at: recordsDirectory, includingPropertiesForKeys: nil) else { return }
-        
-        if allRecordingFiles.count != records.count {
-            await MainActor.run {
-                records.removeAll(keepingCapacity: true)
-                for file in allRecordingFiles {
-                    self.records.append(
-                        Recording(
-                            name: (file.formatted() as NSString).lastPathComponent,
-                            stamp: AppFileManager.instance.getDate(for: file) ?? Date(),
-                            playing: false,
-                            url: file
-                            )
-                        )
-                    }
-                    records.sort(by: {$0.stamp.compare($1.stamp) == .orderedDescending})
-                }
-            }
-        }
-        
-    func playLast() {
-        if let lastRecordedUrl {
-            play(url: lastRecordedUrl)
-        }
-    }
-    
-    func play(url: URL) {
+    func play(url: URL) throws {
         print("Play")
-        if !isRecording {
             let session = AVAudioSession.sharedInstance()
             
             do {
@@ -125,36 +81,13 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
                 audioPlayer?.prepareToPlay()
                 audioPlayer?.play()
-                
-                guard let currentIndex = records.firstIndex(where: { $0.url.path() == url.path() }) else {return}
-                records[currentIndex].playing = true
-                
-            } catch {
-                print("Play back error")
-            }
-        }
+            } 
     }
     
     func stopPlayBack() {
         audioPlayer?.stop()
-        records.indices.forEach({ records[$0].playing = false })
     }
     
-    
-    func deleteRecording(url : URL){
-    
-        guard let currentIndex = records.firstIndex(where: { $0.url.path() == url.path() }) else { return }
-        if records[currentIndex].playing == true {
-            stopPlayBack()
-        }
-    
-        do {
-            try FileManager.default.removeItem(at : url)
-            records.remove(at: currentIndex)
-        } catch {
-            print("Can't delete")
-        }
-    }
 
     func checkRecordingPermissions(session: AVAudioSession) {
            if session.recordPermission != .granted {
@@ -177,7 +110,6 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private func startMonitoring() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { (timer) in
             self.audioRecorder.updateMeters()
-            
             self.samples[self.currentSample] = self.audioRecorder.averagePower(forChannel: 0)
             self.currentSample = (self.currentSample + 1) % self.numberOfSamples
         })
