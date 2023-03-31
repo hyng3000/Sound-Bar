@@ -108,7 +108,7 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
     private func startMonitoring() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { (timer) in
+        timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { _ in
             self.audioRecorder.updateMeters()
             self.samples[self.currentSample] = self.audioRecorder.averagePower(forChannel: 0)
             self.currentSample = (self.currentSample + 1) % self.numberOfSamples
