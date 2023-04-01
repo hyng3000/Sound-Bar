@@ -53,7 +53,7 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audioRecorder.isMeteringEnabled = true
             audioRecorder.prepareToRecord()
             audioRecorder.record()
-            startMonitoring()
+            monitorLevels()
             print("Recording")
         } catch {
             print("recording init error")
@@ -107,8 +107,8 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
-    private func startMonitoring() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true, block: { _ in
+    private func monitorLevels() {
+        timer = Timer.scheduledTimer(withTimeInterval: 0.012, repeats: true, block: { _ in
             self.audioRecorder.updateMeters()
             self.samples[self.currentSample] = self.audioRecorder.averagePower(forChannel: 0)
             self.currentSample = (self.currentSample + 1) % self.numberOfSamples
@@ -116,3 +116,4 @@ class SoundStudio: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
 }
+
