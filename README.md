@@ -1,4 +1,5 @@
-# Sound-Bar
+# Sound Bars
+
 ## A simple app to record sound.
 
 Features:
